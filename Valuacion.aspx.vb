@@ -182,6 +182,8 @@ Public Class Valuacion
 
     Private Function TryParseConcepto(linea As String, seccion As String, ByRef descripcion As String, ByRef monto As Decimal) As Boolean
 
+        If Not linea.Contains("$") Then Return False
+
         Dim montoMatch = Regex.Match(linea, "\$?\s*([\d]{1,3}(?:[,\d]{0,3})*\.\d{2})", RegexOptions.RightToLeft)
         If Not montoMatch.Success Then Return False
 
