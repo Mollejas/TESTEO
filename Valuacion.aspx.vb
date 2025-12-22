@@ -1,7 +1,8 @@
-﻿Imports System.Data
+Imports System.Data
 Imports System.Text.RegularExpressions
 Imports iTextSharp.text.pdf
 Imports iTextSharp.text.pdf.parser
+Imports iTextSharp.text
 Imports System.Linq
 
 Public Class Valuacion
@@ -187,17 +188,37 @@ Public Class Valuacion
     Private Function LeerPdfPorLineas(stream As IO.Stream) As List(Of String)
 
         Dim reader As New PdfReader(stream)
-        Dim sb As New Text.StringBuilder()
+        Dim resultado As New List(Of String)()
 
         For p = 1 To reader.NumberOfPages
-            sb.AppendLine(PdfTextExtractor.GetTextFromPage(reader, p))
+
+            Dim tamano = reader.GetPageSize(p)
+            Dim mitadX = tamano.Width / 2
+
+            ' La hoja viene dividida en dos secciones (izquierda y derecha).
+            ' Extraemos primero el bloque izquierdo (de arriba hacia abajo)
+            ' y después el bloque derecho.
+            Dim regionIzq As New Rectangle(0, 0, mitadX, tamano.Height)
+            Dim regionDer As New Rectangle(mitadX, 0, tamano.Width, tamano.Height)
+
+            resultado.AddRange(ExtraerLineasRegion(reader, p, regionIzq))
+            resultado.AddRange(ExtraerLineasRegion(reader, p, regionDer))
         Next
 
         reader.Close()
 
-        Return sb.ToString().
+        Return resultado
+    End Function
+
+    Private Function ExtraerLineasRegion(reader As PdfReader, pagina As Integer, region As Rectangle) As IEnumerable(Of String)
+
+        Dim strategy As New FilteredTextRenderListener(New LocationTextExtractionStrategy(), New RegionTextRenderFilter(region))
+        Dim texto = PdfTextExtractor.GetTextFromPage(reader, pagina, strategy)
+
+        Return texto.
             Split({vbLf, vbCr}, StringSplitOptions.RemoveEmptyEntries).
-            ToList()
+            Select(Function(l) l.Trim()).
+            Where(Function(l) l <> "")
     End Function
 
 End Class
