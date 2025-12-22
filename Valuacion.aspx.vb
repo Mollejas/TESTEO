@@ -244,22 +244,37 @@ Public Class Valuacion
 
     Private Function TryParseMonto(linea As String, ByRef monto As Decimal) As Boolean
 
-        Dim montoMatch As Match = Nothing
-        If Not TryParseMontoMatch(linea, montoMatch) Then Return False
+        ' Si la línea contiene TPP, es probable que sea la línea de monto para TIEMPO PREPARACION DE PINTURA
+        ' que viene en línea separada, así que es válido para sección de pintura
+        If linea.ToUpper().Contains("TPP") Then
+            Dim montoMatch As Match = Nothing
+            If Not TryParseMontoMatch(linea, montoMatch) Then Return False
+            monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+            Return True
+        End If
 
-        monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+        Dim montoMatch2 As Match = Nothing
+        If Not TryParseMontoMatch(linea, montoMatch2) Then Return False
+
+        monto = Decimal.Parse(montoMatch2.Groups(1).Value.Replace(",", ""))
         Return True
     End Function
 
     Private Function TryParseMontoMatch(linea As String, ByRef montoMatch As Match) As Boolean
-        montoMatch = Regex.Match(linea, "\$?\s*([\d]{1,3}(?:[,\d]{0,3})*(?:\.\d{2})?)", RegexOptions.RightToLeft)
+        ' Primero intenta encontrar un monto con símbolo de peso
+        montoMatch = Regex.Match(linea, "\$\s*([\d,]+\.\d{2})", RegexOptions.RightToLeft)
+        If montoMatch.Success Then Return True
+
+        ' Si no, busca cualquier número con formato de moneda (dígitos, comas, punto y 2 decimales)
+        montoMatch = Regex.Match(linea, "([\d]{1,3}(?:,\d{3})*\.\d{2})", RegexOptions.RightToLeft)
         Return montoMatch.Success
     End Function
 
     Private Function EsLineaPintura(textoUpper As String) As Boolean
         Return textoUpper.Contains(":PINT") _
             OrElse textoUpper.Contains("TPP") _
-            OrElse textoUpper.Contains("PINTURA")
+            OrElse textoUpper.Contains("PINTURA") _
+            OrElse textoUpper.Contains("PREPARACION")
     End Function
 
     Private Function EsConceptoBloqueado(descripcion As String) As Boolean
