@@ -193,6 +193,8 @@ Public Class Valuacion
 
         Dim desc = Regex.Replace(textoAntes, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
 
+        If EsConceptoBloqueado(desc) Then Return False
+
         If seccion = "PIN" AndAlso Not EsLineaPintura(textoUpper) Then Return False
         If seccion = "HOJ" AndAlso textoUpper.Contains(":PINT") Then Return False
 
@@ -207,6 +209,25 @@ Public Class Valuacion
         Return textoUpper.Contains(":PINT") _
             OrElse textoUpper.Contains("TPP") _
             OrElse textoUpper.Contains("PINTURA")
+    End Function
+
+    Private Function EsConceptoBloqueado(descripcion As String) As Boolean
+
+        Dim descUpper = descripcion.ToUpper()
+        Dim descSinAcentos = descUpper.Replace("É", "E")
+
+        Dim bloqueados As String() = {
+            "SUMA TOTAL SIN IVA",
+            "16% IVA",
+            "SUMA TOTAL VAL CON IVA",
+            "DEDUCIBLE",
+            "DEMERITO",
+            "SUBTOTAL",
+            "IVA",
+            "TOTAL"
+        }
+
+        Return bloqueados.Any(Function(b) descSinAcentos.Contains(b))
     End Function
 
     Private Function ExtraerLineasRegion(reader As PdfReader, pagina As Integer, region As Rectangle) As IEnumerable(Of String)
