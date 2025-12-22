@@ -1,0 +1,551 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: center;
+}
+
+td {
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: right;
+}
+
+thead th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.th2 {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+thead th[colspan="4"] {
+    text-align: center;
+}
+
+.form-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+}
+
+    .form-table td[colspan="2"] {
+        text-align: center;
+    }
+
+    .form-table td[rowspan="3"] {
+        vertical-align: top;
+        text-align: center;
+    }
+
+.gasolina {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+}
+
+.tanque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+    .tanque label {
+        margin-bottom: 5px;
+    }
+
+.parte3 td {
+    text-align: left;
+}
+
+.parte3 th {
+    text-align: left;
+}
+
+.gasolina {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+}
+
+.espacio {
+    height: 15px;
+}
+
+.input-textarea {
+    width: 100%;
+    margin-top: 10px;
+    border: 1px solid #000;
+    padding: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+    resize: none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+}
+
+.note {
+    font-size: 12px;
+    color: red;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Ajuste para igualar las columnas */
+    grid-template-rows: repeat(2, 1fr); /* Ajuste para igualar las filas */
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+}
+
+.grid-item {
+    display: flex;
+    flex-direction: column; /* Asegura que el título esté arriba */
+    align-items: center;
+    padding: 1px;
+}
+
+.section-title {
+    font-weight: bold;
+    margin-bottom: 10px; /* Espacio entre el título y los iconos */
+    text-align: center; /* Centra el texto del título */
+}
+
+.icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.icon-item {
+    width: 60px; /* Ajusta el tamaño según sea necesario */
+    margin: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-size: 12px;
+}
+
+    .icon-item img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .icon-item input {
+        margin-top: 5px;
+    }
+
+.tabla_liquido th {
+    border: 0px;
+    padding: 2px;
+    text-align: center;
+}
+
+.tabla_liquido td {
+    border: 0px;
+    padding: 2px;
+    text-align: left;
+}
+
+.section-title, .section-title2 {
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.caucho1, .caucho2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.caucho-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+    .caucho-item div {
+        flex: 1;
+    }
+
+    .caucho-item img {
+        width: 35px;
+    }
+
+/* ====== Dibujo sobre imagen ====== */
+.draw-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+#preexistentes-img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* El canvas se coloca encima de la imagen */
+#preexistentes-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    /* Evita scroll/zoom en touch mientras dibujas */
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.draw-toolbar {
+    margin-top: .5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .75rem;
+    align-items: center;
+}
+
+.tool-btn {
+    padding: .35rem .6rem;
+    border: 1px solid #ccc;
+    border-radius: .5rem;
+    background: #f7f7f7;
+}
+
+    .tool-btn.active {
+        border-color: #1e88e5;
+        background: #e3f2fd;
+    }
+
+/* ========================================================= */
+/* =============  AÑADIDOS / OVERRIDES NUEVOS  ============= */
+/* ========================================================= */
+
+/* Usa esta clase SOLO en la fila de 'Daños preexistentes + Llantas' */
+.grid-preexistentes {
+    /* Dos columnas con proporción 1.8 : 1 para que 'Daños' quede más grande */
+    grid-template-columns: 1.8fr 1fr !important;
+    align-items: start;
+}
+
+/* En móviles, apilar */
+@media (max-width: 980px) {
+    .grid-preexistentes {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Asegurar que el bloque de 'Daños preexistentes' use todo su ancho
+   y que la imagen + canvas se escalen correctamente */
+.grid-item.preexistentes {
+    width: 100%;
+    align-items: stretch; /* que el wrapper crezca al ancho completo */
+}
+
+    .grid-item.preexistentes .draw-wrapper {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .grid-item.preexistentes #preexistentes-img {
+        width: 100%;
+        height: auto;
+    }
+
+/* Haz un poco más grandes las imágenes de las llantas en esa columna (opcional) */
+.grid-item.llantas .caucho-item img {
+    width: 84px; /* antes 35px, mejora legibilidad */
+    height: auto;
+}
+
+/* Reduce la separación para que todo quepa bien al lado */
+.grid-item.llantas .caucho1,
+.grid-item.llantas .caucho2 {
+    gap: 12px;
+}
+
+/* Si el canvas te queda corto de alto por la imagen de base,
+   puedes forzar un alto mínimo del wrapper (ajústalo a tu gusto) */
+.grid-item.preexistentes .draw-wrapper {
+    /* descomenta si quieres forzar altura mínima:
+  min-height: 520px;
+  */
+}
+
+/* Evita que tablas internas estrechen la columna de 'Daños' */
+.grid-item.preexistentes table {
+    width: 100%;
+}
+
+/* Opcional: si quieres que el título quede bien alineado a la izquierda en 'Daños' */
+.grid-item.preexistentes .section-title {
+    text-align: left;
+    margin-bottom: 8px;
+}
+/* --- Fila específica: Daños preexistentes + Llantas --- */
+.grid-container > .row-preexistentes {
+    grid-column: 1 / -1; /* ocupa todo el ancho de la grid padre */
+    display: grid;
+    grid-template-columns: 1.8fr 1fr; /* izquierda más grande */
+    gap: 10px;
+    align-items: start;
+}
+
+/* Responsivo: apilar en pantallas chicas */
+@media (max-width: 980px) {
+    .grid-container > .row-preexistentes {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Imagen + Canvas a 100% del ancho disponible */
+.row-preexistentes .col-left .draw-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+}
+
+.row-preexistentes #preexistentes-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.row-preexistentes #preexistentes-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+/* Hacer más legibles las llantas */
+.row-preexistentes .col-right .caucho1,
+.row-preexistentes .col-right .caucho2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.row-preexistentes .col-right .caucho-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+    border: 1px solid #eee;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+    .row-preexistentes .col-right .caucho-item img {
+        max-width: 84px;
+        height: auto;
+    }
+
+/* Toolbar de dibujo */
+.draw-toolbar {
+    margin-top: .5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .75rem;
+    align-items: center;
+}
+
+.tool-btn {
+    padding: .35rem .6rem;
+    border: 1px solid #ccc;
+    border-radius: .5rem;
+    background: #f7f7f7;
+}
+
+    .tool-btn.active {
+        border-color: #1e88e5;
+        background: #e3f2fd;
+    }
+/* Ajustar espaciados en la columna de llantas */
+.row-preexistentes .col-right table,
+.row-preexistentes .col-right .section-title,
+.row-preexistentes .col-right h3 {
+    margin-top: 5px !important; /* antes eran 20px o más */
+    margin-bottom: 5px !important;
+}
+
+/* Centrar y pegar el título "FRENTE" */
+.row-preexistentes .col-right h3 {
+    margin-top: 10px !important;
+    margin-bottom: 5px !important;
+    font-size: 16px; /* opcional, un poco más compacto */
+}
+
+/* Reducir espacio vertical entre los bloques de caucho y el frente */
+.row-preexistentes .col-right .caucho1,
+.row-preexistentes .col-right .caucho2 {
+    margin-bottom: 5px !important;
+}
+/* Ajustar espaciado a partir de OBSERVACIONES */
+h1, .section-title {
+    margin-top: 10px !important; /* antes 20px */
+    margin-bottom: 8px !important;
+}
+
+textarea.input-textarea {
+    margin-top: 5px !important;
+    margin-bottom: 10px !important;
+}
+
+/* Párrafos debajo de observaciones (notas, advertencias, etc.) */
+#form-content p {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+    line-height: 1.3; /* más compacto */
+}
+
+/* Tabla de la parte final (firma, datos cliente/taller) */
+.parte3 {
+    margin-top: 8px !important;
+}
+
+    .parte3 td,
+    .parte3 th {
+        padding: 4px 6px; /* menos alto */
+    }
+/* Quitar espacio antes de OBSERVACIONES */
+.tabla_liquido {
+    margin-bottom: 5px !important; /* antes 20px */
+}
+
+label[for="bateria_marca"],
+label[for="bateria_nivel_carga"],
+[name="bateria_marca"],
+[name="bateria_nivel_carga"] {
+    margin-bottom: 2px !important;
+    display: inline-block;
+}
+
+h1 {
+    margin-top: 5px !important; /* antes ~20px */
+    margin-bottom: 5px !important;
+}
+
+.section-title {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+}
+/* === Compactar el bloque previo a OBSERVACIONES === */
+
+/* Quita el margen grande que dejan las tablas por defecto antes de Observaciones */
+.grid-container table,
+.grid-item table,
+.tabla_liquido {
+    margin-bottom: 6px !important; /* antes 20px */
+}
+
+/* Labels de batería compactos */
+.grid-item label {
+    display: inline-block;
+    margin: 2px 0 !important;
+}
+
+/* Reduce el gap visual dentro de la grilla (daños + llantas + iconos + líquidos) */
+.grid-container {
+    gap: 6px !important; /* antes 10px */
+    margin-bottom: 0 !important; /* que no deje aire extra */
+}
+
+.row-preexistentes {
+    margin-bottom: 6px !important; /* separador mínimo del siguiente bloque */
+}
+
+.grid-item {
+    padding: 0 !important;
+}
+
+/* Títulos compactos en toda la zona previa y en OBSERVACIONES */
+.section-title, .section-title2 {
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+}
+
+/* === Justo al pasar a OBSERVACIONES === */
+/* Tu estructura es: .grid-container + div > h1 ...  */
+.grid-container + div {
+    margin-top: 0 !important;
+}
+
+    .grid-container + div > h1 {
+        margin-top: 6px !important; /* antes ~20px */
+        margin-bottom: 6px !important;
+    }
+    /* Subtítulo "OBSERVACIONES:" y el textarea pegados */
+    .grid-container + div .section-title {
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+    }
+
+textarea.input-textarea[name="observaciones"] {
+    margin-top: 4px !important;
+    margin-bottom: 8px !important;
+}
+
+/* Párrafos de avisos compactos */
+#form-content p {
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+    line-height: 1.28;
+}
+
+/* Tabla final de firmas con menos altura y más pegada */
+table.parte3 {
+    margin-top: 8px !important;
+}
+
+    table.parte3 td,
+    table.parte3 th {
+        padding: 4px 6px !important;
+    }
+
+
+#preexistentes-wrapper {
+    position: relative;
+}
+
+    #preexistentes-wrapper > img,
+    #preexistentes-wrapper > canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    #preexistentes-wrapper > canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 1; /* arriba de la imagen */
+    }

@@ -1,0 +1,442 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Inventario - Refaccionaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para el scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+        /* Animación para el modal */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 300ms;
+        }
+
+        .modal-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 300ms;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Contenedor Principal -->
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Sistema de Inventario</h1>
+            <p class="text-lg text-gray-600">Administra las refacciones de tu negocio de forma eficiente.</p>
+        </header>
+
+        <!-- Controles y Búsqueda -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
+            <div class="relative w-full sm:w-1/2 lg:w-1/3 mb-4 sm:mb-0">
+                <input type="text" id="searchInput" placeholder="Buscar por nombre, marca o SKU..." class="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button id="addPartButton" class="w-full sm:w-auto bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Añadir Refacción
+            </button>
+        </div>
+
+        <!-- Tabla de Inventario -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Venta</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Las filas se insertarán aquí dinámicamente -->
+                        <tr id="loadingState">
+                            <td colspan="7" class="text-center py-10">
+                                <div class="text-gray-500">Cargando inventario...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Añadir/Editar Refacción -->
+    <div id="partModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden modal-enter">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl m-4">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6">Añadir Nueva Refacción</h2>
+            <form id="partForm">
+                <input type="hidden" id="partId">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-gray-700">SKU / Código</label>
+                        <input type="text" id="sku" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre de la Pieza</label>
+                        <input type="text" id="nombre" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="marca" class="block text-sm font-medium text-gray-700">Marca</label>
+                        <input type="text" id="marca" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="ubicacion" class="block text-sm font-medium text-gray-700">Ubicación (Ej: Estante A-3)</label>
+                        <input type="text" id="ubicacion" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="stock" class="block text-sm font-medium text-gray-700">Stock Actual</label>
+                        <input type="number" id="stock" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="stockMinimo" class="block text-sm font-medium text-gray-700">Stock Mínimo</label>
+                        <input type="number" id="stockMinimo" required value="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="precio" class="block text-sm font-medium text-gray-700">Precio de Venta ($)</label>
+                        <input type="number" step="0.01" id="precio" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end space-x-4">
+                    <button type="button" id="cancelButton" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación para Eliminar -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden modal-enter">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md m-4">
+            <h2 class="text-xl font-bold mb-4">Confirmar Eliminación</h2>
+            <p class="text-gray-600 mb-6">¿Estás seguro de que quieres eliminar esta refacción?</p>
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="cancelDeleteButton" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+                <button type="button" id="confirmDeleteButton" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+        <span id="toastMessage"></span>
+    </div>
+
+
+    <script type="module">
+        // --- Configuración de Firebase ---
+        // Estas variables se proporcionan automáticamente en el entorno de ejecución.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // FIX: Replaced invalid fallback object with a syntactically correct one.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        setLogLevel('debug');
+
+        // --- Autenticación ---
+        let userId = null;
+        let isAuthReady = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                isAuthReady = true;
+                console.log("Usuario autenticado:", userId);
+                loadInventory();
+            }
+        });
+
+        (async () => {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Error de autenticación:", error);
+            }
+        })();
+
+
+        // --- Referencias a Elementos del DOM ---
+        const inventoryTableBody = document.getElementById('inventoryTableBody');
+        const loadingState = document.getElementById('loadingState');
+        const addPartButton = document.getElementById('addPartButton');
+        const partModal = document.getElementById('partModal');
+        const cancelButton = document.getElementById('cancelButton');
+        const partForm = document.getElementById('partForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const searchInput = document.getElementById('searchInput');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+        const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+
+        let currentInventory = []; // Caché local para la búsqueda
+        let partToDeleteId = null; // ID de la refacción a eliminar
+
+        // --- Funciones de la UI ---
+
+        /**
+         * Muestra una notificación toast.
+         * @param {string} message - El mensaje a mostrar.
+         * @param {boolean} isError - Si es un mensaje de error.
+         */
+        function showToast(message, isError = false) {
+            toastMessage.textContent = message;
+            toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        /**
+         * Renderiza el inventario en la tabla.
+         * @param {Array} parts - Un array de objetos de refacciones.
+         */
+        function renderInventory(parts) {
+            inventoryTableBody.innerHTML = ''; // Limpiar tabla
+            if (parts.length === 0) {
+                inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">No hay refacciones en el inventario. ¡Añade la primera!</td></tr>`;
+                return;
+            }
+
+            parts.forEach(part => {
+                const stock = parseInt(part.stock, 10);
+                const stockMinimo = parseInt(part.stockMinimo, 10);
+                const isLowStock = stock <= stockMinimo;
+
+                const row = document.createElement('tr');
+                row.className = isLowStock ? 'bg-red-100' : '';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${part.sku}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${part.nombre}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${part.marca || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${part.ubicacion || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}">${stock}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-semibold">$${parseFloat(part.precio).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button data-id="${part.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Editar</button>
+                        <button data-id="${part.id}" class="delete-btn text-red-600 hover:text-red-900">Eliminar</button>
+                    </td>
+                `;
+                inventoryTableBody.appendChild(row);
+            });
+        }
+
+        /**
+         * Abre o cierra un modal con animación.
+         * @param {HTMLElement} modal - El elemento del modal.
+         * @param {boolean} show - True para mostrar, false para ocultar.
+         */
+        function toggleGenericModal(modal, show) {
+            if (show) {
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('modal-enter'), 10);
+            } else {
+                modal.classList.add('modal-leave');
+                modal.classList.add('modal-leave-active');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('modal-leave', 'modal-leave-active');
+                    modal.classList.add('modal-enter');
+                }, 300);
+            }
+        }
+
+        // --- Lógica de Datos (Firestore) ---
+
+        /**
+         * Carga el inventario desde Firestore y establece un listener en tiempo real.
+         */
+        function loadInventory() {
+            if (!isAuthReady) {
+                console.log("Esperando autenticación para cargar el inventario...");
+                return;
+            }
+            const inventoryCollection = collection(db, `artifacts/${appId}/public/data/refacciones`);
+
+            onSnapshot(inventoryCollection, (snapshot) => {
+                loadingState.style.display = 'none';
+                currentInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Ordenar por nombre alfabéticamente
+                currentInventory.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                renderInventory(currentInventory);
+            }, (error) => {
+                console.error("Error al cargar el inventario:", error);
+                inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Error al cargar datos. Revisa la consola.</td></tr>`;
+            });
+        }
+
+        // --- Event Listeners ---
+
+        // Abrir modal para añadir
+        addPartButton.addEventListener('click', () => {
+            modalTitle.textContent = 'Añadir Nueva Refacción';
+            partForm.reset();
+            document.getElementById('partId').value = '';
+            toggleGenericModal(partModal, true);
+        });
+
+        // Cerrar modal de añadir/editar
+        cancelButton.addEventListener('click', () => toggleGenericModal(partModal, false));
+        partModal.addEventListener('click', (e) => {
+            if (e.target === partModal) {
+                toggleGenericModal(partModal, false);
+            }
+        });
+
+        // Enviar formulario (Añadir o Editar)
+        partForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('partId').value;
+            const partData = {
+                sku: document.getElementById('sku').value,
+                nombre: document.getElementById('nombre').value,
+                marca: document.getElementById('marca').value,
+                ubicacion: document.getElementById('ubicacion').value,
+                stock: parseInt(document.getElementById('stock').value, 10),
+                stockMinimo: parseInt(document.getElementById('stockMinimo').value, 10),
+                precio: parseFloat(document.getElementById('precio').value)
+            };
+
+            try {
+                const inventoryCollection = collection(db, `artifacts/${appId}/public/data/refacciones`);
+                if (id) {
+                    // Actualizar
+                    const partDoc = doc(db, `artifacts/${appId}/public/data/refacciones`, id);
+                    await updateDoc(partDoc, partData);
+                    showToast('Refacción actualizada con éxito.');
+                } else {
+                    // Añadir
+                    await addDoc(inventoryCollection, partData);
+                    showToast('Refacción añadida con éxito.');
+                }
+                toggleGenericModal(partModal, false);
+            } catch (error) {
+                console.error("Error al guardar la refacción:", error);
+                showToast('Error al guardar. Inténtalo de nuevo.', true);
+            }
+        });
+
+        // Acciones en la tabla (Editar y Eliminar)
+        inventoryTableBody.addEventListener('click', (e) => {
+            const target = e.target;
+            const id = target.dataset.id;
+            if (!id) return;
+
+            if (target.classList.contains('edit-btn')) {
+                const part = currentInventory.find(p => p.id === id);
+                if (part) {
+                    modalTitle.textContent = 'Editar Refacción';
+                    document.getElementById('partId').value = part.id;
+                    document.getElementById('sku').value = part.sku;
+                    document.getElementById('nombre').value = part.nombre;
+                    document.getElementById('marca').value = part.marca;
+                    document.getElementById('ubicacion').value = part.ubicacion;
+                    document.getElementById('stock').value = part.stock;
+                    document.getElementById('stockMinimo').value = part.stockMinimo;
+                    document.getElementById('precio').value = part.precio;
+                    toggleGenericModal(partModal, true);
+                }
+            }
+
+            if (target.classList.contains('delete-btn')) {
+                partToDeleteId = id;
+                toggleGenericModal(deleteConfirmModal, true);
+            }
+        });
+
+        // Listeners del modal de eliminación
+        cancelDeleteButton.addEventListener('click', () => toggleGenericModal(deleteConfirmModal, false));
+        deleteConfirmModal.addEventListener('click', (e) => {
+            if (e.target === deleteConfirmModal) {
+                toggleGenericModal(deleteConfirmModal, false);
+            }
+        });
+
+        confirmDeleteButton.addEventListener('click', async () => {
+            if (partToDeleteId) {
+                try {
+                    const partDoc = doc(db, `artifacts/${appId}/public/data/refacciones`, partToDeleteId);
+                    await deleteDoc(partDoc);
+                    showToast('Refacción eliminada.');
+                } catch (error) {
+                    console.error("Error al eliminar:", error);
+                    showToast('Error al eliminar. Inténtalo de nuevo.', true);
+                } finally {
+                    partToDeleteId = null;
+                    toggleGenericModal(deleteConfirmModal, false);
+                }
+            }
+        });
+
+        // Búsqueda
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredParts = currentInventory.filter(part =>
+                part.nombre.toLowerCase().includes(searchTerm) ||
+                (part.marca && part.marca.toLowerCase().includes(searchTerm)) ||
+                part.sku.toLowerCase().includes(searchTerm)
+            );
+            renderInventory(filteredParts);
+        });
+
+    </script>
+</body>
+</html>
