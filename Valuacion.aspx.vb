@@ -113,7 +113,18 @@ Public Class Valuacion
                 Dim desc As String = Nothing
                 Dim monto As Decimal
 
-                If TryParseConcepto(txt, seccionActual, desc, monto) Then
+                ' CASO ESPECIAL: Detectar TIEMPO PREPARACION DE PINTURA
+                If seccionActual = "PIN" AndAlso (txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) Then
+                    ' Extraer monto si está en la misma línea
+                    Dim montoMatch = Regex.Match(txt, "\$\s*([\d,]+\.\d{2})")
+                    If montoMatch.Success Then
+                        desc = "TIEMPO PREPARACION DE PINTURA"
+                        monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                    Else
+                        ' Si no hay monto, guardar como descripción pendiente
+                        descripcionPendiente = "TIEMPO PREPARACION DE PINTURA"
+                    End If
+                ElseIf TryParseConcepto(txt, seccionActual, desc, monto) Then
                     descripcionPendiente = Nothing
                 ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
                     desc = descripcionPendiente
@@ -135,6 +146,35 @@ Public Class Valuacion
             End If
 
         Next
+
+        ' ==========================
+        ' FALLBACK: Buscar TIEMPO PREPARACION DE PINTURA si no fue capturado
+        ' ==========================
+        Dim tieneTPP As Boolean = False
+        For Each row As DataRow In dtPin.Rows
+            If row("Descripcion").ToString().ToUpper().Contains("TIEMPO") AndAlso _
+               row("Descripcion").ToString().ToUpper().Contains("PREPARACION") Then
+                tieneTPP = True
+                Exit For
+            End If
+        Next
+
+        If Not tieneTPP Then
+            ' Buscar en todas las líneas del PDF
+            For Each linea In lineas
+                Dim txtU = linea.ToUpper()
+                If (txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) OrElse _
+                   (txtU.Contains("TPP") AndAlso txtU.Contains("$")) Then
+                    ' Intentar extraer el monto
+                    Dim montoMatch = Regex.Match(linea, "\$\s*([\d,]+\.\d{2})")
+                    If montoMatch.Success Then
+                        Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                        dtPin.Rows.Add("TIEMPO PREPARACION DE PINTURA", monto)
+                        Exit For
+                    End If
+                End If
+            Next
+        End If
 
         ' ==========================
         ' BIND GRIDS
