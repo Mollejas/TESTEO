@@ -1,4 +1,5 @@
 Imports System.Data
+Imports System.IO
 Imports System.Text.RegularExpressions
 Imports iTextSharp.text.pdf
 Imports iTextSharp.text.pdf.parser
