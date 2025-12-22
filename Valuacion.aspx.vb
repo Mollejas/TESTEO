@@ -36,21 +36,21 @@ Public Class Valuacion
             ' ==========================
             ' DETECTAR SECCIONES
             ' ==========================
-            If txtU = "REFACCIONES" Then
+            If txtU.Contains("REFACCIONES") Then
                 seccionActual = "REF"
                 capturandoConceptos = False
                 capturandoTotales = False
                 Continue For
             End If
 
-            If txtU.StartsWith("PINTURA") Then
+            If txtU.Contains("PINTURA") Then
                 seccionActual = "PIN"
                 capturandoConceptos = False
                 capturandoTotales = False
                 Continue For
             End If
 
-            If txtU.StartsWith("MANO DE OBRA HOJALATERIA") Then
+            If txtU.Contains("MANO DE OBRA HOJALATERIA") Then
                 seccionActual = "HOJ"
                 capturandoConceptos = False
                 capturandoTotales = False
@@ -104,48 +104,18 @@ Public Class Valuacion
             ' ==========================
             If capturandoConceptos Then
 
-                Dim montoMatch = Regex.Match(txt, "\$\s*([\d,]+\.\d{2})")
-                If Not montoMatch.Success Then Continue For
+                Dim desc As String = Nothing
+                Dim monto As Decimal
 
-                Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
-                Dim textoAntes = txt.Substring(0, montoMatch.Index).Trim()
-                Dim partes = textoAntes.Split()
-
-                If partes.Length < 2 Then Continue For
+                If Not TryParseConcepto(txt, seccionActual, desc, monto) Then Continue For
 
                 Select Case seccionActual
-
-                    ' --------------------------
-                    ' REFACCIONES
-                    ' --------------------------
                     Case "REF"
-                        If Not textoAntes.Contains(":") Then
-                            Dim desc = String.Join(" ", partes.Take(partes.Length - 1))
-                            If desc <> "" Then dtRef.Rows.Add(desc, monto)
-                        End If
-
-                    ' --------------------------
-                    ' PINTURA
-                    ' --------------------------
+                        dtRef.Rows.Add(desc, monto)
                     Case "PIN"
-                        If textoAntes.ToUpper().Contains(":PINT") _
-                           OrElse textoAntes.ToUpper().Contains("TPP") Then
-
-                            Dim desc = String.Join(" ", partes.Take(partes.Length - 1))
-                            desc = Regex.Replace(desc, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
-                            If desc <> "" Then dtPin.Rows.Add(desc, monto)
-                        End If
-
-                    ' --------------------------
-                    ' MANO DE OBRA HOJALATERIA
-                    ' --------------------------
+                        dtPin.Rows.Add(desc, monto)
                     Case "HOJ"
-                        ' CLAVE: TODO con monto y que NO sea pintura
-                        If Not textoAntes.ToUpper().Contains(":PINT") Then
-                            Dim desc = String.Join(" ", partes.Take(partes.Length - 1))
-                            If desc <> "" Then dtHoj.Rows.Add(desc, monto)
-                        End If
-
+                        dtHoj.Rows.Add(desc, monto)
                 End Select
             End If
 
@@ -208,6 +178,35 @@ Public Class Valuacion
         reader.Close()
 
         Return resultado
+    End Function
+
+    Private Function TryParseConcepto(linea As String, seccion As String, ByRef descripcion As String, ByRef monto As Decimal) As Boolean
+
+        Dim montoMatch = Regex.Match(linea, "\$?\s*([\d]{1,3}(?:[,\d]{0,3})*\.\d{2})", RegexOptions.RightToLeft)
+        If Not montoMatch.Success Then Return False
+
+        Dim textoAntes = linea.Substring(0, montoMatch.Index).Trim()
+        If textoAntes = "" Then Return False
+
+        Dim textoUpper = textoAntes.ToUpper()
+        If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
+
+        Dim desc = Regex.Replace(textoAntes, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
+
+        If seccion = "PIN" AndAlso Not EsLineaPintura(textoUpper) Then Return False
+        If seccion = "HOJ" AndAlso textoUpper.Contains(":PINT") Then Return False
+
+        If desc.Length < 3 Then Return False
+
+        descripcion = desc
+        monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+        Return True
+    End Function
+
+    Private Function EsLineaPintura(textoUpper As String) As Boolean
+        Return textoUpper.Contains(":PINT") _
+            OrElse textoUpper.Contains("TPP") _
+            OrElse textoUpper.Contains("PINTURA")
     End Function
 
     Private Function ExtraerLineasRegion(reader As PdfReader, pagina As Integer, region As Rectangle) As IEnumerable(Of String)
