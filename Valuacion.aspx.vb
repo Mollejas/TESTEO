@@ -112,6 +112,7 @@ Public Class Valuacion
 
                 Dim desc As String = Nothing
                 Dim monto As Decimal
+                Dim procesado As Boolean = False
 
                 ' CASO ESPECIAL: Detectar TIEMPO PREPARACION DE PINTURA
                 If seccionActual = "PIN" AndAlso (txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) Then
@@ -120,17 +121,24 @@ Public Class Valuacion
                     If montoMatch.Success Then
                         desc = "TIEMPO PREPARACION DE PINTURA"
                         monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                        procesado = True
                     Else
                         ' Si no hay monto, guardar como descripción pendiente
                         descripcionPendiente = "TIEMPO PREPARACION DE PINTURA"
+                        procesado = True
                     End If
-                ElseIf TryParseConcepto(txt, seccionActual, desc, monto) Then
-                    descripcionPendiente = Nothing
-                ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
-                    desc = descripcionPendiente
-                    descripcionPendiente = Nothing
-                ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
-                    descripcionPendiente = desc
+                End If
+
+                ' Intentar procesar normalmente si no fue procesado arriba
+                If Not procesado Then
+                    If TryParseConcepto(txt, seccionActual, desc, monto) Then
+                        descripcionPendiente = Nothing
+                    ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
+                        desc = descripcionPendiente
+                        descripcionPendiente = Nothing
+                    ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
+                        descripcionPendiente = desc
+                    End If
                 End If
 
                 If desc IsNot Nothing Then
