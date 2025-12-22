@@ -207,7 +207,7 @@ Public Class Valuacion
         Dim textoUpper = textoAntes.ToUpper()
         If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
 
-        Dim desc = Regex.Replace(textoAntes, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
+        Dim desc = Regex.Replace(textoAntes, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
 
         If EsConceptoBloqueado(desc) Then Return False
 
@@ -231,7 +231,7 @@ Public Class Valuacion
         Dim textoUpper = texto.ToUpper()
         If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
 
-        Dim desc = Regex.Replace(texto, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
+        Dim desc = Regex.Replace(texto, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
         If desc.Length < 3 Then Return False
         If EsConceptoBloqueado(desc) Then Return False
 
