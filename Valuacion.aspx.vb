@@ -25,6 +25,7 @@ Public Class Valuacion
         Dim seccionActual As String = ""
         Dim capturandoConceptos As Boolean = False
         Dim capturandoTotales As Boolean = False
+        Dim descripcionPendiente As String = Nothing
 
         For Each linea In lineas
 
@@ -40,6 +41,7 @@ Public Class Valuacion
                 seccionActual = "REF"
                 capturandoConceptos = False
                 capturandoTotales = False
+                descripcionPendiente = Nothing
                 Continue For
             End If
 
@@ -47,6 +49,7 @@ Public Class Valuacion
                 seccionActual = "PIN"
                 capturandoConceptos = False
                 capturandoTotales = False
+                descripcionPendiente = Nothing
                 Continue For
             End If
 
@@ -54,6 +57,7 @@ Public Class Valuacion
                 seccionActual = "HOJ"
                 capturandoConceptos = False
                 capturandoTotales = False
+                descripcionPendiente = Nothing
                 Continue For
             End If
 
@@ -71,6 +75,7 @@ Public Class Valuacion
             If txtU = "SUBTOTAL" Then
                 capturandoConceptos = False
                 capturandoTotales = True
+                descripcionPendiente = Nothing
                 Continue For
             End If
 
@@ -107,16 +112,25 @@ Public Class Valuacion
                 Dim desc As String = Nothing
                 Dim monto As Decimal
 
-                If Not TryParseConcepto(txt, seccionActual, desc, monto) Then Continue For
+                If TryParseConcepto(txt, seccionActual, desc, monto) Then
+                    descripcionPendiente = Nothing
+                ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
+                    desc = descripcionPendiente
+                    descripcionPendiente = Nothing
+                ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
+                    descripcionPendiente = desc
+                End If
 
-                Select Case seccionActual
-                    Case "REF"
-                        dtRef.Rows.Add(desc, monto)
-                    Case "PIN"
-                        dtPin.Rows.Add(desc, monto)
-                    Case "HOJ"
-                        dtHoj.Rows.Add(desc, monto)
-                End Select
+                If desc IsNot Nothing Then
+                    Select Case seccionActual
+                        Case "REF"
+                            dtRef.Rows.Add(desc, monto)
+                        Case "PIN"
+                            dtPin.Rows.Add(desc, monto)
+                        Case "HOJ"
+                            dtHoj.Rows.Add(desc, monto)
+                    End Select
+                End If
             End If
 
         Next
@@ -184,8 +198,8 @@ Public Class Valuacion
 
         If Not linea.Contains("$") Then Return False
 
-        Dim montoMatch = Regex.Match(linea, "\$?\s*([\d]{1,3}(?:[,\d]{0,3})*\.\d{2})", RegexOptions.RightToLeft)
-        If Not montoMatch.Success Then Return False
+        Dim montoMatch As Match = Nothing
+        If Not TryParseMontoMatch(linea, montoMatch) Then Return False
 
         Dim textoAntes = linea.Substring(0, montoMatch.Index).Trim()
         If textoAntes = "" Then Return False
@@ -205,6 +219,41 @@ Public Class Valuacion
         descripcion = desc
         monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
         Return True
+    End Function
+
+    Private Function TryParseDescripcionSinMonto(linea As String, seccion As String, ByRef descripcion As String) As Boolean
+
+        If linea.Contains("$") Then Return False
+
+        Dim texto = linea.Trim()
+        If texto = "" Then Return False
+
+        Dim textoUpper = texto.ToUpper()
+        If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
+
+        Dim desc = Regex.Replace(texto, "\s+TPP\s*$", "", RegexOptions.IgnoreCase).Trim()
+        If desc.Length < 3 Then Return False
+        If EsConceptoBloqueado(desc) Then Return False
+
+        If seccion = "PIN" AndAlso Not EsLineaPintura(textoUpper) Then Return False
+        If seccion = "HOJ" AndAlso textoUpper.Contains(":PINT") Then Return False
+
+        descripcion = desc
+        Return True
+    End Function
+
+    Private Function TryParseMonto(linea As String, ByRef monto As Decimal) As Boolean
+
+        Dim montoMatch As Match = Nothing
+        If Not TryParseMontoMatch(linea, montoMatch) Then Return False
+
+        monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+        Return True
+    End Function
+
+    Private Function TryParseMontoMatch(linea As String, ByRef montoMatch As Match) As Boolean
+        montoMatch = Regex.Match(linea, "\$?\s*([\d]{1,3}(?:[,\d]{0,3})*(?:\.\d{2})?)", RegexOptions.RightToLeft)
+        Return montoMatch.Success
     End Function
 
     Private Function EsLineaPintura(textoUpper As String) As Boolean
