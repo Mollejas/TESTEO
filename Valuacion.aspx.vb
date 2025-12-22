@@ -112,13 +112,22 @@ Public Class Valuacion
                 Dim desc As String = Nothing
                 Dim monto As Decimal
 
-                If TryParseConcepto(txt, seccionActual, desc, monto) Then
+                Dim descLinea As String = Nothing
+                Dim montoLinea As Decimal
+
+                If TryParseConcepto(txt, seccionActual, descLinea, montoLinea) Then
+                    desc = If(descripcionPendiente IsNot Nothing, (descripcionPendiente & " " & descLinea).Trim(), descLinea)
+                    monto = montoLinea
                     descripcionPendiente = Nothing
-                ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
+                ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, montoLinea) Then
                     desc = descripcionPendiente
+                    monto = montoLinea
                     descripcionPendiente = Nothing
-                ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
-                    descripcionPendiente = desc
+                Else
+                    Dim descSinMonto As String = Nothing
+                    If TryParseDescripcionSinMonto(txt, seccionActual, descSinMonto) Then
+                        descripcionPendiente = If(descripcionPendiente IsNot Nothing, (descripcionPendiente & " " & descSinMonto).Trim(), descSinMonto)
+                    End If
                 End If
 
                 If desc IsNot Nothing Then
