@@ -278,7 +278,7 @@ Public Class Valuacion
 
         If EsConceptoBloqueado(desc) Then Return False
 
-        If seccion = "PIN" AndAlso Not EsLineaPintura(textoUpper) Then Return False
+        ' No aplicar validación EsLineaPintura en sección PINTURA - aceptar todos los conceptos
         If seccion = "HOJ" AndAlso textoUpper.Contains(":PINT") Then Return False
 
         If desc.Length < 3 Then Return False
@@ -302,7 +302,7 @@ Public Class Valuacion
         If desc.Length < 3 Then Return False
         If EsConceptoBloqueado(desc) Then Return False
 
-        If seccion = "PIN" AndAlso Not EsLineaPintura(textoUpper) Then Return False
+        ' No aplicar validación EsLineaPintura en sección PINTURA - aceptar todos los conceptos
         If seccion = "HOJ" AndAlso textoUpper.Contains(":PINT") Then Return False
 
         descripcion = desc
