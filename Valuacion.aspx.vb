@@ -203,6 +203,85 @@ Public Class Valuacion
         End If
 
         ' ==========================
+        ' FALLBACK: Buscar CUALQUIER concepto después de TPP en PINTURA
+        ' ==========================
+        ' Encontrar el índice de la línea de TIEMPO PREPARACION DE PINTURA
+        Dim indiceTPP As Integer = -1
+        Dim indiceSubtotalPin As Integer = -1
+        Dim dentroSeccionPintura As Boolean = False
+
+        For i = 0 To lineas.Count - 1
+            Dim txtU = lineas(i).ToUpper()
+
+            ' Marcar cuando entramos a la sección PINTURA
+            If txtU.Contains("PINTURA") AndAlso Not txtU.Contains("PREPARACION") Then
+                dentroSeccionPintura = True
+                Continue For
+            End If
+
+            ' Salir de la sección cuando llegamos a MANO DE OBRA HOJALATERIA
+            If txtU.Contains("MANO DE OBRA HOJALATERIA") Then
+                dentroSeccionPintura = False
+                indiceSubtotalPin = i
+                Exit For
+            End If
+
+            ' Dentro de la sección PINTURA, buscar TIEMPO PREPARACION
+            If dentroSeccionPintura AndAlso ((txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) OrElse txtU.Contains("TPP")) Then
+                indiceTPP = i
+            End If
+
+            ' Buscar SUBTOTAL dentro de la sección PINTURA
+            If dentroSeccionPintura AndAlso txtU.Contains("SUBTOTAL") Then
+                indiceSubtotalPin = i
+            End If
+        Next
+
+        ' Si encontramos TPP, buscar conceptos entre TPP y SUBTOTAL
+        If indiceTPP >= 0 AndAlso indiceSubtotalPin > indiceTPP Then
+            For i = indiceTPP + 1 To indiceSubtotalPin - 1
+                Dim linea = lineas(i)
+                Dim txtU = linea.ToUpper()
+
+                ' Ignorar líneas que no son conceptos
+                If txtU = "" OrElse txtU.StartsWith("UT") OrElse txtU = "IVA" OrElse txtU = "TOTAL" Then
+                    Continue For
+                End If
+
+                ' Si la línea tiene $ (posible concepto)
+                If linea.Contains("$") Then
+                    Dim montoMatch As Match = Nothing
+                    If TryParseMontoMatch(linea, montoMatch) Then
+                        ' Extraer descripción
+                        Dim textoAntes = linea.Substring(0, montoMatch.Index).Trim()
+
+                        ' Limpiar TPP y números al final
+                        Dim desc = Regex.Replace(textoAntes, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
+                        desc = Regex.Replace(desc, "\s+[\d.]+\s*$", "").Trim()
+
+                        ' Validar que sea un concepto válido
+                        If desc.Length >= 3 AndAlso Not EsConceptoBloqueado(desc) Then
+                            ' Verificar que no esté ya capturado
+                            Dim yaCapturado As Boolean = False
+                            For Each row As DataRow In dtPin.Rows
+                                If row("Descripcion").ToString().Trim().ToUpper() = desc.ToUpper() Then
+                                    yaCapturado = True
+                                    Exit For
+                                End If
+                            Next
+
+                            ' Agregar si no fue capturado
+                            If Not yaCapturado Then
+                                Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                                dtPin.Rows.Add(desc, monto)
+                            End If
+                        End If
+                    End If
+                End If
+            Next
+        End If
+
+        ' ==========================
         ' BIND GRIDS
         ' ==========================
         gvRefacciones.DataSource = dtRef
