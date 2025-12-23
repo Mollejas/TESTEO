@@ -274,7 +274,11 @@ Public Class Valuacion
         Dim textoUpper = textoAntes.ToUpper()
         If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
 
+        ' Eliminar TPP y números al final (para TIEMPO PREPARACION)
         Dim desc = Regex.Replace(textoAntes, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
+
+        ' Eliminar números decimales al final (para conceptos con UT como "TIRANTE BRAZO SUP.TRAS.SALP. 10.0")
+        desc = Regex.Replace(desc, "\s+[\d.]+\s*$", "").Trim()
 
         If EsConceptoBloqueado(desc) Then Return False
 
@@ -298,7 +302,12 @@ Public Class Valuacion
         Dim textoUpper = texto.ToUpper()
         If textoUpper = "TOTAL" OrElse textoUpper = "IVA" OrElse textoUpper = "UT" Then Return False
 
+        ' Eliminar TPP y números al final
         Dim desc = Regex.Replace(texto, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
+
+        ' Eliminar números decimales al final (para conceptos con UT)
+        desc = Regex.Replace(desc, "\s+[\d.]+\s*$", "").Trim()
+
         If desc.Length < 3 Then Return False
         If EsConceptoBloqueado(desc) Then Return False
 
