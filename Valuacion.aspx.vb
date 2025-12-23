@@ -28,8 +28,8 @@ Public Class Valuacion
         Dim capturandoTotales As Boolean = False
         Dim descripcionPendiente As String = Nothing
 
-        For Each linea In lineas
-
+        For idx = 0 To lineas.Count - 1
+            Dim linea = lineas(idx)
             Dim txt = linea.Trim()
             If txt = "" Then Continue For
 
@@ -74,6 +74,24 @@ Public Class Valuacion
             ' INICIO DE TOTALES (CIERRA SECCION)
             ' ==========================
             If txtU = "SUBTOTAL" Then
+                ' Si hay una descripción pendiente sin monto, intentar buscar su monto en las próximas líneas
+                If descripcionPendiente IsNot Nothing Then
+                    ' Buscar en las próximas 3 líneas si hay un monto
+                    Dim indiceLimite = Math.Min(idx + 3, lineas.Count - 1)
+                    For i = idx To indiceLimite
+                        Dim lineaBusqueda = lineas(i)
+                        Dim montoTemp As Decimal
+                        If TryParseMonto(lineaBusqueda, montoTemp) Then
+                            ' Encontramos el monto, insertar el concepto
+                            Select Case seccionActual
+                                Case "REF" : dtRef.Rows.Add(descripcionPendiente, montoTemp)
+                                Case "PIN" : dtPin.Rows.Add(descripcionPendiente, montoTemp)
+                                Case "HOJ" : dtHoj.Rows.Add(descripcionPendiente, montoTemp)
+                            End Select
+                            Exit For
+                        End If
+                    Next
+                End If
                 capturandoConceptos = False
                 capturandoTotales = True
                 descripcionPendiente = Nothing
@@ -112,6 +130,7 @@ Public Class Valuacion
 
                 Dim desc As String = Nothing
                 Dim monto As Decimal
+                Dim procesado As Boolean = False
 
                 ' CASO ESPECIAL: Detectar TIEMPO PREPARACION DE PINTURA
                 If seccionActual = "PIN" AndAlso (txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) Then
@@ -120,17 +139,24 @@ Public Class Valuacion
                     If montoMatch.Success Then
                         desc = "TIEMPO PREPARACION DE PINTURA"
                         monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                        procesado = True
                     Else
                         ' Si no hay monto, guardar como descripción pendiente
                         descripcionPendiente = "TIEMPO PREPARACION DE PINTURA"
+                        procesado = True
                     End If
-                ElseIf TryParseConcepto(txt, seccionActual, desc, monto) Then
-                    descripcionPendiente = Nothing
-                ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
-                    desc = descripcionPendiente
-                    descripcionPendiente = Nothing
-                ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
-                    descripcionPendiente = desc
+                End If
+
+                ' Intentar procesar normalmente si no fue procesado arriba
+                If Not procesado Then
+                    If TryParseConcepto(txt, seccionActual, desc, monto) Then
+                        descripcionPendiente = Nothing
+                    ElseIf descripcionPendiente IsNot Nothing AndAlso TryParseMonto(txt, monto) Then
+                        desc = descripcionPendiente
+                        descripcionPendiente = Nothing
+                    ElseIf TryParseDescripcionSinMonto(txt, seccionActual, desc) Then
+                        descripcionPendiente = desc
+                    End If
                 End If
 
                 If desc IsNot Nothing Then
