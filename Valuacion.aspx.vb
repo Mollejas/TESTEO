@@ -203,38 +203,83 @@ Public Class Valuacion
         End If
 
         ' ==========================
-        ' FALLBACK: Buscar conceptos después de TPP en PINTURA (como TIRANTE BRAZO)
+        ' FALLBACK: Buscar CUALQUIER concepto después de TPP en PINTURA
         ' ==========================
-        For Each linea In lineas
-            Dim txtU = linea.ToUpper()
-            ' Buscar líneas que contengan TIRANTE BRAZO (u otros conceptos después de TPP)
-            If txtU.Contains("TIRANTE") AndAlso txtU.Contains("BRAZO") AndAlso linea.Contains("$") Then
-                ' Verificar que no esté ya capturado
-                Dim yaCapturado As Boolean = False
-                For Each row As DataRow In dtPin.Rows
-                    If row("Descripcion").ToString().ToUpper().Contains("TIRANTE") AndAlso _
-                       row("Descripcion").ToString().ToUpper().Contains("BRAZO") Then
-                        yaCapturado = True
-                        Exit For
-                    End If
-                Next
+        ' Encontrar el índice de la línea de TIEMPO PREPARACION DE PINTURA
+        Dim indiceTPP As Integer = -1
+        Dim indiceSubtotalPin As Integer = -1
+        Dim dentroSeccionPintura As Boolean = False
 
-                If Not yaCapturado Then
-                    ' Extraer el monto
-                    Dim montoMatch = Regex.Match(linea, "\$\s*([\d,]+\.\d{2})", RegexOptions.RightToLeft)
-                    If montoMatch.Success Then
-                        ' Extraer la descripción (antes del monto, sin números de UT)
+        For i = 0 To lineas.Count - 1
+            Dim txtU = lineas(i).ToUpper()
+
+            ' Marcar cuando entramos a la sección PINTURA
+            If txtU.Contains("PINTURA") AndAlso Not txtU.Contains("PREPARACION") Then
+                dentroSeccionPintura = True
+                Continue For
+            End If
+
+            ' Salir de la sección cuando llegamos a MANO DE OBRA HOJALATERIA
+            If txtU.Contains("MANO DE OBRA HOJALATERIA") Then
+                dentroSeccionPintura = False
+                indiceSubtotalPin = i
+                Exit For
+            End If
+
+            ' Dentro de la sección PINTURA, buscar TIEMPO PREPARACION
+            If dentroSeccionPintura AndAlso ((txtU.Contains("TIEMPO") AndAlso txtU.Contains("PREPARACION")) OrElse txtU.Contains("TPP")) Then
+                indiceTPP = i
+            End If
+
+            ' Buscar SUBTOTAL dentro de la sección PINTURA
+            If dentroSeccionPintura AndAlso txtU.Contains("SUBTOTAL") Then
+                indiceSubtotalPin = i
+            End If
+        Next
+
+        ' Si encontramos TPP, buscar conceptos entre TPP y SUBTOTAL
+        If indiceTPP >= 0 AndAlso indiceSubtotalPin > indiceTPP Then
+            For i = indiceTPP + 1 To indiceSubtotalPin - 1
+                Dim linea = lineas(i)
+                Dim txtU = linea.ToUpper()
+
+                ' Ignorar líneas que no son conceptos
+                If txtU = "" OrElse txtU.StartsWith("UT") OrElse txtU = "IVA" OrElse txtU = "TOTAL" Then
+                    Continue For
+                End If
+
+                ' Si la línea tiene $ (posible concepto)
+                If linea.Contains("$") Then
+                    Dim montoMatch As Match = Nothing
+                    If TryParseMontoMatch(linea, montoMatch) Then
+                        ' Extraer descripción
                         Dim textoAntes = linea.Substring(0, montoMatch.Index).Trim()
-                        Dim desc = Regex.Replace(textoAntes, "\s+[\d.]+\s*$", "").Trim()
-                        If desc.Length >= 3 Then
-                            Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
-                            dtPin.Rows.Add(desc, monto)
+
+                        ' Limpiar TPP y números al final
+                        Dim desc = Regex.Replace(textoAntes, "\s+TPP(\s+[\d.]+)?\s*$", "", RegexOptions.IgnoreCase).Trim()
+                        desc = Regex.Replace(desc, "\s+[\d.]+\s*$", "").Trim()
+
+                        ' Validar que sea un concepto válido
+                        If desc.Length >= 3 AndAlso Not EsConceptoBloqueado(desc) Then
+                            ' Verificar que no esté ya capturado
+                            Dim yaCapturado As Boolean = False
+                            For Each row As DataRow In dtPin.Rows
+                                If row("Descripcion").ToString().Trim().ToUpper() = desc.ToUpper() Then
+                                    yaCapturado = True
+                                    Exit For
+                                End If
+                            Next
+
+                            ' Agregar si no fue capturado
+                            If Not yaCapturado Then
+                                Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                                dtPin.Rows.Add(desc, monto)
+                            End If
                         End If
                     End If
                 End If
-                Exit For
-            End If
-        Next
+            Next
+        End If
 
         ' ==========================
         ' BIND GRIDS
