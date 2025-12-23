@@ -203,6 +203,40 @@ Public Class Valuacion
         End If
 
         ' ==========================
+        ' FALLBACK: Buscar conceptos después de TPP en PINTURA (como TIRANTE BRAZO)
+        ' ==========================
+        For Each linea In lineas
+            Dim txtU = linea.ToUpper()
+            ' Buscar líneas que contengan TIRANTE BRAZO (u otros conceptos después de TPP)
+            If txtU.Contains("TIRANTE") AndAlso txtU.Contains("BRAZO") AndAlso linea.Contains("$") Then
+                ' Verificar que no esté ya capturado
+                Dim yaCapturado As Boolean = False
+                For Each row As DataRow In dtPin.Rows
+                    If row("Descripcion").ToString().ToUpper().Contains("TIRANTE") AndAlso _
+                       row("Descripcion").ToString().ToUpper().Contains("BRAZO") Then
+                        yaCapturado = True
+                        Exit For
+                    End If
+                Next
+
+                If Not yaCapturado Then
+                    ' Extraer el monto
+                    Dim montoMatch = Regex.Match(linea, "\$\s*([\d,]+\.\d{2})", RegexOptions.RightToLeft)
+                    If montoMatch.Success Then
+                        ' Extraer la descripción (antes del monto, sin números de UT)
+                        Dim textoAntes = linea.Substring(0, montoMatch.Index).Trim()
+                        Dim desc = Regex.Replace(textoAntes, "\s+[\d.]+\s*$", "").Trim()
+                        If desc.Length >= 3 Then
+                            Dim monto = Decimal.Parse(montoMatch.Groups(1).Value.Replace(",", ""))
+                            dtPin.Rows.Add(desc, monto)
+                        End If
+                    End If
+                End If
+                Exit For
+            End If
+        Next
+
+        ' ==========================
         ' BIND GRIDS
         ' ==========================
         gvRefacciones.DataSource = dtRef
